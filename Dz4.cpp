@@ -1,4 +1,4 @@
-﻿#include <iostream>
+﻿#include <iostream> 
 #include <string>
 #include <Windows.h>
 #include <vector>
@@ -78,36 +78,95 @@ class Apartment {
     int rooms;
     double area;
     int floor;
-    vector<People> humans;
+    People* humans;
+    int humanNum;
 
 public:
-    Apartment() : rooms(0), area(0), floor(0) {}
+    Apartment() : rooms(0), area(0), floor(0), humans(nullptr), humanNum(0) {
+        humans = new People[1];
+    }
 
     Apartment(int roomsP, double areaP, int floorP)
-        : rooms(roomsP), area(areaP), floor(floorP) {}
+        : rooms(roomsP), area(areaP), floor(floorP), humans(nullptr), humanNum(0) {
+        humans = new People[1];
+    }
 
     Apartment(const Apartment& other)
-        : rooms(other.rooms), area(other.area), floor(other.floor), humans(other.humans) {}
+        : rooms(other.rooms), area(other.area), floor(other.floor), humanNum(other.humanNum) {
+        humans = new People[humanNum];
+        for (int i = 0; i < humanNum; i++) {
+            humans[i] = other.humans[i];
+        }
+    }
 
-    ~Apartment() {}
+
+
+    Apartment(Apartment&& other)
+        : rooms(other.rooms), area(other.area), floor(other.floor),
+        humans(other.humans), humanNum(other.humanNum) {
+        other.humans = nullptr;
+        other.humanNum = 0;
+    }
+
+    Apartment& operator=(const Apartment& other) {
+        if (this != &other) {
+            delete[] humans;
+            rooms = other.rooms;
+            area = other.area;
+            floor = other.floor;
+            humanNum = other.humanNum;
+            humans = new People[humanNum];
+            for (int i = 0; i < humanNum; i++) {
+                humans[i] = other.humans[i];
+            }
+        }
+        return *this;
+    }
+
+    Apartment& operator=(Apartment&& other) {
+        if (this != &other) {
+            delete[] humans;
+            rooms = other.rooms;
+            area = other.area;
+            floor = other.floor;
+            humans = other.humans;
+            humanNum = other.humanNum;
+            other.humans = nullptr;
+            other.humanNum = 0;
+        }
+        return *this;
+    }
+
+
+
+    ~Apartment() {
+        delete[] humans;
+    }
 
     void newPerson(const People& person) {
-        humans.push_back(person);
+        People* newHumans = new People[humanNum + 1];
+        for (int i = 0; i < humanNum; i++) {
+            newHumans[i] = humans[i];
+        }
+        newHumans[humanNum] = person;
+        delete[] humans;
+        humans = newHumans;
+        humanNum++;
     }
 
     void output() const {
         cout << "Квартира: " << rooms << " кімнати, площа: " << area << " кв.м, поверх: " << floor << ".\n";
-        cout << "Кількість жильців: " << humans.size() << endl;
-        for (int i = 0; i < humans.size(); i++) {
+        cout << "Кількість жильців: " << humanNum << endl;
+        for (int i = 0; i < humanNum; i++) {
             humans[i].output();
         }
     }
 
-    int getHumanCount() const { return humans.size(); }
+    int getHumanCount() const { return humanNum; }
     int getFloor() const { return floor; }
 
     bool findHumanByID(int ID, People& foundHuman) {
-        for (int i = 0; i < humans.size(); i++) {
+        for (int i = 0; i < humanNum; i++) {
             if (humans[i].getID() == ID) {
                 foundHuman = humans[i];
                 return true;
@@ -117,10 +176,17 @@ public:
     }
 
     bool deleteHumanByID(int ID) {
-        for (int i = 0; i < humans.size(); i++) {
+        for (int i = 0; i < humanNum; i++) {
             if (humans[i].getID() == ID) {
-                humans[i] = humans.back();
-                humans.pop_back();
+                People* newHumans = new People[humanNum - 1];
+                for (int j = 0, k = 0; j < humanNum; j++) {
+                    if (j != i) {
+                        newHumans[k++] = humans[j];
+                    }
+                }
+                delete[] humans;
+                humans = newHumans;
+                humanNum--;
                 cout << "Жильця з ID " << ID << " видалено.\n";
                 return true;
             }
@@ -129,6 +195,8 @@ public:
         return false;
     }
 };
+
+
 
 class House {
     int floors;
